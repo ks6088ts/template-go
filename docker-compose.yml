@@ -1,0 +1,25 @@
+version: '3'
+services:
+  go:
+    build:
+      context: .
+      dockerfile: ./docker/go/Dockerfile
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - WORK_DIR=${WORK_DIR}
+    container_name: go
+    tty: true
+    volumes:
+      - ./:${WORK_DIR}
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+    ports:
+      - ${PORT}:8080
+    networks:
+      - shared-network
+
+networks:
+  shared-network:
+    external: true
