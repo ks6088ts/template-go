@@ -4,3 +4,9 @@
 
 # template-go
 Template repository for Go
+
+# install
+
+```bash
+go get github.com/ks6088ts/template-go
+```
