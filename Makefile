@@ -10,7 +10,7 @@ VERSION ?= $(shell git rev-parse --short HEAD)
 # https://stackoverflow.com/questions/18136918/how-to-get-current-relative-directory-of-your-makefile
 MAKEFILE_PATH ?= $(abspath $(lastword $(MAKEFILE_LIST)))
 REPO_NAME ?= $(notdir $(patsubst %/,%,$(dir $(MAKEFILE_PATH))))
-LDFLAGS ?= -ldflags="-s -w -X '$(shell echo $(MAKEFILE_PATH) | grep -o "github.com\/.*\/$(REPO_NAME)")/cmd/$(REPO_NAME)/cmd.version=$(VERSION)'"
+LDFLAGS ?= -ldflags="-s -w -X '$(shell echo $(MAKEFILE_PATH) | grep -o "github.com\/.*\/$(REPO_NAME)")/cmd.version=$(VERSION)'"
 OUT_DIR ?= outputs
 BIN_PATH ?= $(OUT_DIR)/$(REPO_NAME)
 

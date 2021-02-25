@@ -40,6 +40,7 @@ git push origin v0.0.0
 # put version info into binary
 # https://www.digitalocean.com/community/tutorials/using-ldflags-to-set-version-information-for-go-applications
 # go build -ldflags="-X 'package_path.variable_name=new_value'"
+# define `version` variable in cmd package
 
 # count system calls by strace
 strace -e trace=write -c ./outputs/template-go
