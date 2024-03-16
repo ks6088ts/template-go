@@ -8,8 +8,8 @@ func TestAdd(t *testing.T) {
 	// Table Driven Test
 	tests := []struct {
 		name string
-		a int
-		b int
+		a    int
+		b    int
 		want int
 	}{
 		{name: "nominal case", a: 1, b: 2, want: 3},
