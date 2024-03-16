@@ -72,7 +72,11 @@ release: ## release applications
 
 .PHONY: docker-build
 docker-build: ## build Docker image
-	docker build -t $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG) .
+	docker build \
+		-t $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG) \
+		--build-arg GIT_REVISION=$(GIT_REVISION) \
+		--build-arg GIT_TAG=$(GIT_TAG) \
+		.
 
 .PHONY: docker-run
 docker-run: ## run Docker container

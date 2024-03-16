@@ -1,5 +1,8 @@
 FROM golang:1.21 as build
 
+ARG GIT_REVISION="0000000"
+ARG GIT_TAG="x.x.x"
+
 WORKDIR /go/src/app
 COPY . .
 
