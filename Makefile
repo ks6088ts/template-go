@@ -19,6 +19,7 @@ help:
 install-deps-dev: ## install dependencies for development
 	@# https://golangci-lint.run/welcome/install/#local-installation
 	@which golangci-lint || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v$(GOLANGCI_LINT_VERSION)
+	@which goreleaser || go install github.com/goreleaser/goreleaser@latest
 
 .PHONY: format-check
 format-check: ## format check
@@ -40,7 +41,11 @@ test: ## run tests
 .PHONY: build
 build: ## build applications
 	mkdir -p dist
-	$(GOBUILD) -ldflags=$(LDFLAGS) -o dist/template-go_$(GIT_TAG)_$(GIT_REVISION)_$(GOOS)_$(GOARCH) .
+	$(GOBUILD) -ldflags=$(LDFLAGS) -o dist/template-go .
 
 .PHONY: ci-test
 ci-test: install-deps-dev format-check lint test build ## run CI test
+
+.PHONY: release
+release: ## release applications
+	goreleaser release --snapshot --clean
