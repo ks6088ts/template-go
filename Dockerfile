@@ -1,4 +1,4 @@
-FROM golang:1.21 as build
+FROM golang:1.21 AS build
 
 ARG GIT_REVISION="0000000"
 ARG GIT_TAG="x.x.x"
