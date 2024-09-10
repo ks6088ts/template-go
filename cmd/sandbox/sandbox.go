@@ -19,10 +19,24 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-package main
+package sandbox
 
-import "github.com/ks6088ts/template-go/cmd"
+import (
+	"fmt"
 
-func main() {
-	cmd.Execute()
+	"github.com/spf13/cobra"
+)
+
+// sandboxCmd represents the sandbox command
+var sandboxCmd = &cobra.Command{
+	Use:   "sandbox",
+	Short: "SandBox command",
+	Long:  `This is a sandbox command.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("sandbox called")
+	},
+}
+
+func GetCommand() *cobra.Command {
+	return sandboxCmd
 }
