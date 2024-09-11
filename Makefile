@@ -54,6 +54,7 @@ test: ## run tests
 
 .PHONY: build
 build: ## build applications
+	go mod tidy
 	mkdir -p $(OUTPUT_DIR)
 	$(GOBUILD) -ldflags=$(LDFLAGS) -trimpath -o $(OUTPUT) .
 
