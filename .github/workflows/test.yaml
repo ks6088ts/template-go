@@ -3,32 +3,49 @@ name: test
 on:
   push:
     branches:
-      - 'main'
-      - 'feature/**'
+      - "main"
+      - "feature/**"
   pull_request:
     branches:
-      - 'main'
+      - "main"
 
 jobs:
   test:
     strategy:
       matrix:
         platform:
-          - 'ubuntu-latest'
+          - "ubuntu-latest"
           # - 'macos-latest'
           # - 'windows-latest'
         go-version:
-          - '1.22.x'
+          - "1.23.x"
     runs-on: ${{ matrix.platform }}
     steps:
-        - uses: actions/checkout@v4
-          with:
-            fetch-depth: 0 # to retrieve git tags
-        - name: Set up Go
-          uses: actions/setup-go@v5
-          with:
-            go-version: ${{ matrix.go-version }}
-        - name: Run CI tests
-          shell: bash
-          run: |
-            make ci-test
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # to retrieve git tags
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: false
+      - uses: actions/cache/restore@v4
+        id: go-cache
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-
+      - name: Run CI tests
+        shell: bash
+        run: |
+          make ci-test
+      - uses: actions/cache/save@v4
+        if: github.ref_name == 'main'
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ steps.go-cache.outputs.cache-primary-key }}

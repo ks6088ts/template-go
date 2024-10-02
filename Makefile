@@ -18,8 +18,8 @@ DOCKER_COMMAND ?= /app
 
 # Tools
 TOOLS_DIR ?= $(shell go env GOPATH)/bin
-GOLANGCI_LINT_VERSION ?= 1.56.2
-TRIVY_VERSION ?= 0.49.1
+GOLANGCI_LINT_VERSION ?= 1.61.0
+TRIVY_VERSION ?= 0.55.2
 
 # Misc
 OUTPUT_DIR ?= dist
@@ -32,6 +32,12 @@ help:
 
 .PHONY: install-deps-dev
 install-deps-dev: ## install dependencies for development
+	@# https://golangci-lint.run/welcome/install/#local-installation
+	@which golangci-lint || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(TOOLS_DIR) v$(GOLANGCI_LINT_VERSION)
+	@# https://goreleaser.com/install/
+	@which goreleaser || go install github.com/goreleaser/goreleaser@latest
+	@# https://aquasecurity.github.io/trivy/v0.18.3/installation/#install-script
+	@which trivy || curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b $(TOOLS_DIR) v$(TRIVY_VERSION)
 
 .PHONY: format-check
 format-check: ## format check
@@ -44,8 +50,6 @@ format: ## format code
 
 .PHONY: lint
 lint: ## lint
-	@# https://golangci-lint.run/welcome/install/#local-installation
-	@which golangci-lint || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(TOOLS_DIR) v$(GOLANGCI_LINT_VERSION)
 	golangci-lint run -v
 
 .PHONY: test
@@ -61,10 +65,14 @@ build: ## build applications
 .PHONY: ci-test
 ci-test: install-deps-dev format-check lint test build ## run CI test
 
+.PHONY: update
+update: ## update
+	@# https://stackoverflow.com/a/67202539/4457856
+	go get -u ./...
+	go mod tidy
+
 .PHONY: release
 release: ## release applications
-	@# https://goreleaser.com/install/
-	@which goreleaser || go install github.com/goreleaser/goreleaser@latest
 	goreleaser release --snapshot --clean
 
 # ---
@@ -89,9 +97,7 @@ docker-lint: ## lint Dockerfile
 
 .PHONY: docker-scan
 docker-scan: ## scan Docker image
-	@# https://aquasecurity.github.io/trivy/v0.18.3/installation/#install-script
-	@which trivy || curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b $(TOOLS_DIR) v$(TRIVY_VERSION)
 	trivy image $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG)
 
 .PHONY: ci-test-docker
-ci-test-docker: docker-lint docker-build docker-scan docker-run ## run CI test for Docker
+ci-test-docker: install-deps-dev docker-lint docker-build docker-scan docker-run ## run CI test for Docker
