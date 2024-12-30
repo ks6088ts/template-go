@@ -13,7 +13,7 @@ A GitHub template repository for Go
 
 ## Prerequisites
 
-- [Go 1.21+](https://go.dev/doc/install)
+- [Go 1.23+](https://go.dev/doc/install)
 - [GNU Make](https://www.gnu.org/software/make/)
 
 ## Development instructions
@@ -54,6 +54,10 @@ make docker-run
 # run CI tests in docker container
 make ci-test-docker
 ```
+
+## Deployment instructions
+
+### Docker Hub
 
 To publish the docker image to Docker Hub, you need to set the following secrets in the repository settings.
 
