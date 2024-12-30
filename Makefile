@@ -18,8 +18,10 @@ DOCKER_COMMAND ?= /app
 
 # Tools
 TOOLS_DIR ?= $(shell go env GOPATH)/bin
-GOLANGCI_LINT_VERSION ?= 1.61.0
-TRIVY_VERSION ?= 0.55.2
+# https://github.com/golangci/golangci-lint/releases
+GOLANGCI_LINT_VERSION ?= 1.62.2
+# https://github.com/aquasecurity/trivy/releases
+TRIVY_VERSION ?= 0.58.1
 
 # Misc
 OUTPUT_DIR ?= dist
