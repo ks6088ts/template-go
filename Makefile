@@ -14,7 +14,7 @@ LDFLAGS ?= '-s -w \
 # Docker
 DOCKER_REPO_NAME ?= ks6088ts
 DOCKER_IMAGE_NAME ?= template-go
-DOCKER_COMMAND ?= /app
+DOCKER_COMMAND ?=
 
 # Tools
 TOOLS_DIR ?= /usr/local/bin
