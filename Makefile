@@ -17,7 +17,7 @@ DOCKER_IMAGE_NAME ?= template-go
 DOCKER_COMMAND ?= /app
 
 # Tools
-TOOLS_DIR ?= $(shell go env GOPATH)/bin
+TOOLS_DIR ?= /usr/local/bin
 # https://github.com/golangci/golangci-lint/releases
 GOLANGCI_LINT_VERSION ?= 1.62.2
 # https://github.com/aquasecurity/trivy/releases
