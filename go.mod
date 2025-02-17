@@ -3,7 +3,7 @@ module github.com/ks6088ts/template-go
 go 1.23.2
 
 require (
-	github.com/spf13/cobra v1.8.1
+	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0
 )
 
