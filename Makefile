@@ -19,9 +19,9 @@ DOCKER_COMMAND ?=
 # Tools
 TOOLS_DIR ?= /usr/local/bin
 # https://github.com/golangci/golangci-lint/releases
-GOLANGCI_LINT_VERSION ?= 1.62.2
+GOLANGCI_LINT_VERSION ?= 2.2.1
 # https://github.com/aquasecurity/trivy/releases
-TRIVY_VERSION ?= 0.58.1
+TRIVY_VERSION ?= 0.64.0
 
 # Misc
 OUTPUT_DIR ?= dist
