@@ -13,7 +13,7 @@ A GitHub template repository for Go
 
 ## Prerequisites
 
-- [Go 1.23+](https://go.dev/doc/install)
+- [Go 1.24+](https://go.dev/doc/install)
 - [GNU Make](https://www.gnu.org/software/make/)
 
 ## Development instructions
