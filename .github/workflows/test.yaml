@@ -29,6 +29,10 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
           cache: false
+      - name: Install actionlint
+        shell: bash
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) latest /usr/local/bin
       - uses: actions/cache/restore@v4
         id: go-cache
         with:

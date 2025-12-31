@@ -40,6 +40,7 @@ install-deps-dev: ## install dependencies for development
 	@which goreleaser || go install github.com/goreleaser/goreleaser@latest
 	@# https://aquasecurity.github.io/trivy/v0.18.3/installation/#install-script
 	@which trivy || curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b $(TOOLS_DIR) v$(TRIVY_VERSION)
+	@which actionlint || echo "install actionlint https://github.com/rhysd/actionlint"
 
 .PHONY: format-check
 format-check: ## format check
@@ -53,6 +54,7 @@ format: ## format code
 .PHONY: lint
 lint: ## lint
 	golangci-lint run -v
+	actionlint
 
 .PHONY: test
 test: ## run tests
