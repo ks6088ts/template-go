@@ -19,9 +19,9 @@ DOCKER_COMMAND ?=
 # Tools
 TOOLS_DIR ?= /usr/local/bin
 # https://github.com/golangci/golangci-lint/releases
-GOLANGCI_LINT_VERSION ?= 2.2.1
+GOLANGCI_LINT_VERSION ?= 2.11.3
 # https://github.com/aquasecurity/trivy/releases
-TRIVY_VERSION ?= 0.64.0
+TRIVY_VERSION ?= 0.69.3
 
 # Misc
 OUTPUT_DIR ?= dist
@@ -37,7 +37,7 @@ install-deps-dev: ## install dependencies for development
 	@# https://golangci-lint.run/welcome/install/#local-installation
 	@which golangci-lint || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(TOOLS_DIR) v$(GOLANGCI_LINT_VERSION)
 	@# https://goreleaser.com/install/
-	@which goreleaser || go install github.com/goreleaser/goreleaser@latest
+	@which goreleaser || go install github.com/goreleaser/goreleaser/v2@latest
 	@# https://aquasecurity.github.io/trivy/v0.18.3/installation/#install-script
 	@which trivy || curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b $(TOOLS_DIR) v$(TRIVY_VERSION)
 	@which actionlint || echo "install actionlint https://github.com/rhysd/actionlint"
