@@ -13,4 +13,5 @@ RUN make build OUTPUT=/go/bin/app
 FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=build /go/bin/app /
-CMD ["/app"]
+# Pass docker run arguments to the application, such as the version subcommand.
+ENTRYPOINT ["/app"]
