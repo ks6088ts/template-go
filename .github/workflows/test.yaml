@@ -1,5 +1,4 @@
 name: test
-
 on:
   push:
     branches:
@@ -9,47 +8,17 @@ on:
     branches:
       - "main"
 
+permissions:
+  contents: read
+
 jobs:
   test:
-    strategy:
-      matrix:
-        platform:
-          - "ubuntu-latest"
-          # - 'macos-latest'
-          # - 'windows-latest'
-        go-version:
-          - "1.26.x"
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # to retrieve git tags
+      - uses: actions/checkout@v7
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
-          go-version: ${{ matrix.go-version }}
-          cache: false
-      - name: Install actionlint
-        shell: bash
-        run: |
-          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) latest /usr/local/bin
-      - uses: actions/cache/restore@v4
-        id: go-cache
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-${{ hashFiles('go.sum') }}
-          restore-keys: |
-            go-
+          go-version: "1.27.x"
       - name: Run CI tests
-        shell: bash
-        run: |
-          make ci-test
-      - uses: actions/cache/save@v4
-        if: github.ref_name == 'main'
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ steps.go-cache.outputs.cache-primary-key }}
+        run: make ci-test

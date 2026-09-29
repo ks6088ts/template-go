@@ -22,6 +22,7 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -30,75 +31,53 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+// Execute runs a fresh command tree and returns any command error.
+func Execute() error {
+	return newRootCommand().Execute()
+}
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "template-go",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
+// newRootCommand isolates flags and configuration so each invocation starts clean.
+func newRootCommand() *cobra.Command {
+	var configFile string
+	config := viper.New()
+	rootCommand := &cobra.Command{
+		Use:   "template-go",
+		Short: "A brief description of your application",
+		Long: `A longer description that spans multiple lines and likely contains
 examples and usage of using your application. For example:
 
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
 	}
-}
+	rootCommand.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $HOME/.template-go.yaml)")
+	rootCommand.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCommand.PersistentPreRunE = func(command *cobra.Command, args []string) error {
+		if configFile != "" {
+			config.SetConfigFile(configFile)
+		} else {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return fmt.Errorf("find home directory: %w", err)
+			}
+			config.AddConfigPath(home)
+			config.SetConfigType("yaml")
+			config.SetConfigName(".template-go")
+		}
+		config.AutomaticEnv()
 
-func init() {
-	cobra.OnInitialize(initConfig)
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.template-go.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-	// Register sub commands
-	registerSubCommands()
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := os.UserHomeDir()
-		cobra.CheckErr(err)
-
-		// Search config in home directory with name ".template-go" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName(".template-go")
+		if err := config.ReadInConfig(); err != nil {
+			var notFound viper.ConfigFileNotFoundError
+			if configFile == "" && errors.As(err, &notFound) {
+				return nil
+			}
+			return fmt.Errorf("read config: %w", err)
+		}
+		if _, err := fmt.Fprintln(command.ErrOrStderr(), "Using config file:", config.ConfigFileUsed()); err != nil {
+			return fmt.Errorf("report config file: %w", err)
+		}
+		return nil
 	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-	}
-}
-
-// registerSubCommands registers sub commands
-func registerSubCommands() {
-	rootCmd.AddCommand(sandbox.GetCommand())
-	// Add other sub commands here
+	rootCommand.AddCommand(sandbox.GetCommand(), newVersionCommand())
+	return rootCommand
 }

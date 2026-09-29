@@ -21,22 +21,18 @@ THE SOFTWARE.
 */
 package sandbox
 
-import (
-	"fmt"
+import "github.com/spf13/cobra"
 
-	"github.com/spf13/cobra"
-)
-
-// sandboxCmd represents the sandbox command
-var sandboxCmd = &cobra.Command{
-	Use:   "sandbox",
-	Short: "SandBox command",
-	Long:  `This is a sandbox command.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("sandbox called")
-	},
-}
-
+// GetCommand creates a sandbox command with its nested hello command.
 func GetCommand() *cobra.Command {
-	return sandboxCmd
+	sandboxCommand := &cobra.Command{
+		Use:   "sandbox",
+		Short: "SandBox command",
+		Long:  `This is a sandbox command.`,
+		Run: func(command *cobra.Command, args []string) {
+			command.Println("sandbox called")
+		},
+	}
+	sandboxCommand.AddCommand(newHelloCommand())
+	return sandboxCommand
 }
