@@ -21,8 +21,15 @@ THE SOFTWARE.
 */
 package main
 
-import "github.com/ks6088ts/template-go/cmd"
+import (
+	"os"
 
+	"github.com/ks6088ts/template-go/cmd"
+)
+
+// main reports command failures through Cobra and exits with a failing status.
 func main() {
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

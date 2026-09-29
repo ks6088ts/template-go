@@ -21,32 +21,16 @@ THE SOFTWARE.
 */
 package sandbox
 
-import (
-	"fmt"
+import "github.com/spf13/cobra"
 
-	"github.com/spf13/cobra"
-)
-
-// helloCmd represents the hello command
-var helloCmd = &cobra.Command{
-	Use:   "hello",
-	Short: "SandBox Hello Command",
-	Long:  `This is a sandbox command.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("sandbox hello called")
-	},
-}
-
-func init() {
-	sandboxCmd.AddCommand(helloCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// helloCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// helloCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+// newHelloCommand builds the nested sandbox command without shared state.
+func newHelloCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "hello",
+		Short: "SandBox Hello Command",
+		Long:  `This is a sandbox command.`,
+		Run: func(command *cobra.Command, args []string) {
+			command.Println("sandbox hello called")
+		},
+	}
 }
