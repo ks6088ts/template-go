@@ -1,14 +1,20 @@
-FROM golang:1.27-bookworm AS build
+# Compile on the builder's native platform instead of emulating the target CPU.
+FROM --platform=$BUILDPLATFORM golang:1.27.2-bookworm AS build
 
-ARG GIT_REVISION="0000000"
-ARG GIT_TAG="x.x.x"
+ARG TARGETOS
+ARG TARGETARCH
+ARG GIT_REVISION="unknown"
+ARG GIT_TAG="dev"
 
 WORKDIR /go/src/app
 COPY go.mod go.sum ./
 RUN go mod download
-COPY . .
+COPY main.go ./
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
+COPY Makefile ./
 
-RUN make build OUTPUT=/go/bin/app
+RUN make build GOOS=$TARGETOS GOARCH=$TARGETARCH OUTPUT=/go/bin/app
 
 FROM gcr.io/distroless/static-debian12:nonroot
 

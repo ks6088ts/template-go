@@ -10,6 +10,7 @@
       ]
     }
   },
-  "postCreateCommand": "make install-deps-dev",
+  // go.mod selects the required patch even if the development image is older.
+  "postCreateCommand": "go version && make install-deps-dev",
   "remoteUser": "vscode"
 }

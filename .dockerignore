@@ -1,4 +1,11 @@
-.git
-.github
-dist
-.tools
+# Only the module, build recipe, and application source are needed.
+**
+!go.mod
+!go.sum
+!Makefile
+!main.go
+!cmd/
+!cmd/**
+!internal/
+!internal/**
+**/*_test.go

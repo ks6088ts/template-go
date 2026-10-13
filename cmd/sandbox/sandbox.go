@@ -21,16 +21,23 @@ THE SOFTWARE.
 */
 package sandbox
 
-import "github.com/spf13/cobra"
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+)
 
 // GetCommand creates a sandbox command with its nested hello command.
 func GetCommand() *cobra.Command {
 	sandboxCommand := &cobra.Command{
 		Use:   "sandbox",
-		Short: "SandBox command",
-		Long:  `This is a sandbox command.`,
-		Run: func(command *cobra.Command, args []string) {
-			command.Println("sandbox called")
+		Short: "Run the example command",
+		Args:  cobra.NoArgs,
+		RunE: func(command *cobra.Command, args []string) error {
+			if _, err := fmt.Fprintln(command.OutOrStdout(), "sandbox called"); err != nil {
+				return fmt.Errorf("write sandbox output: %w", err)
+			}
+			return nil
 		},
 	}
 	sandboxCommand.AddCommand(newHelloCommand())

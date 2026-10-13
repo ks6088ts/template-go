@@ -21,16 +21,23 @@ THE SOFTWARE.
 */
 package sandbox
 
-import "github.com/spf13/cobra"
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+)
 
 // newHelloCommand builds the nested sandbox command without shared state.
 func newHelloCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "hello",
-		Short: "SandBox Hello Command",
-		Long:  `This is a sandbox command.`,
-		Run: func(command *cobra.Command, args []string) {
-			command.Println("sandbox hello called")
+		Short: "Run the nested example command",
+		Args:  cobra.NoArgs,
+		RunE: func(command *cobra.Command, args []string) error {
+			if _, err := fmt.Fprintln(command.OutOrStdout(), "sandbox hello called"); err != nil {
+				return fmt.Errorf("write hello output: %w", err)
+			}
+			return nil
 		},
 	}
 }
