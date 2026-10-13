@@ -22,6 +22,8 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/ks6088ts/template-go/internal"
 	"github.com/spf13/cobra"
 )
@@ -30,10 +32,13 @@ import (
 func newVersionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "Version command",
-		Long:  `Version command is a command to show the version of the application.`,
-		Run: func(command *cobra.Command, args []string) {
-			command.Printf("version=%s, revision=%s\n", internal.Version, internal.Revision)
+		Short: "Show the build version and revision",
+		Args:  cobra.NoArgs,
+		RunE: func(command *cobra.Command, args []string) error {
+			if _, err := fmt.Fprintf(command.OutOrStdout(), "version=%s, revision=%s\n", internal.Version, internal.Revision); err != nil {
+				return fmt.Errorf("write version: %w", err)
+			}
+			return nil
 		},
 	}
 }

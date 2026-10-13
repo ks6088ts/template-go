@@ -17,12 +17,14 @@ builds:
     ignore:
       - goos: darwin
         goarch: '386'
+      - goos: darwin
+        goarch: arm
       - goos: windows
         goarch: arm
     flags:
       - -trimpath
     ldflags:
-      - '-s -w -X github.com/ks6088ts/template-go/internal.Version={{.Version}} -X github.com/ks6088ts/template-go/internal.Revision={{.Commit}}'
+      - '-s -w -X {{.ModulePath}}/internal.Version={{.Version}} -X {{.ModulePath}}/internal.Revision={{.FullCommit}}'
     binary: '{{ .ProjectName }}_v{{ .Version }}'
 
 archives:

@@ -1,7 +1,8 @@
 # Code style
 
-- Always add code comments.
+- Add Go doc comments for functions and types; explain non-obvious decisions without narrating obvious code.
 - Use camelCase for variable names.
-- Use godoc comment style for functions.
-- Do not skip error handling if the error is not nil.
-- Always create unit tests for new features.
+- Handle non-nil errors explicitly and wrap errors with context using `%w` when returning them.
+- Use the standard `testing` package for new features and behavior changes.
+- Send command results to stdout and diagnostics to stderr; propagate output write errors.
+- Keep command state local to each invocation and avoid adding dependencies without a concrete need.

@@ -1,7 +1,7 @@
 package internal
 
-// Revision is set during the build process to the release version of the commit hash
-var Revision string
+// Revision is the commit hash injected at build time, or unknown without Git metadata.
+var Revision = "unknown"
 
-// Version is set during the build process to the release version of the git tag
-var Version string
+// Version is the release version injected at build time, or dev for development builds.
+var Version = "dev"

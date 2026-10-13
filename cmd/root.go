@@ -22,13 +22,8 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"errors"
-	"fmt"
-	"os"
-
 	"github.com/ks6088ts/template-go/cmd/sandbox"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // Execute runs a fresh command tree and returns any command error.
@@ -36,47 +31,13 @@ func Execute() error {
 	return newRootCommand().Execute()
 }
 
-// newRootCommand isolates flags and configuration so each invocation starts clean.
+// newRootCommand isolates command state so each invocation starts clean.
 func newRootCommand() *cobra.Command {
-	var configFile string
-	config := viper.New()
 	rootCommand := &cobra.Command{
-		Use:   "template-go",
-		Short: "A brief description of your application",
-		Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	}
-	rootCommand.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $HOME/.template-go.yaml)")
-	rootCommand.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	rootCommand.PersistentPreRunE = func(command *cobra.Command, args []string) error {
-		if configFile != "" {
-			config.SetConfigFile(configFile)
-		} else {
-			home, err := os.UserHomeDir()
-			if err != nil {
-				return fmt.Errorf("find home directory: %w", err)
-			}
-			config.AddConfigPath(home)
-			config.SetConfigType("yaml")
-			config.SetConfigName(".template-go")
-		}
-		config.AutomaticEnv()
-
-		if err := config.ReadInConfig(); err != nil {
-			var notFound viper.ConfigFileNotFoundError
-			if configFile == "" && errors.As(err, &notFound) {
-				return nil
-			}
-			return fmt.Errorf("read config: %w", err)
-		}
-		if _, err := fmt.Fprintln(command.ErrOrStderr(), "Using config file:", config.ConfigFileUsed()); err != nil {
-			return fmt.Errorf("report config file: %w", err)
-		}
-		return nil
+		Use:          "template-go",
+		Short:        "A minimal Go CLI template",
+		Example:      "  template-go sandbox hello\n  template-go version",
+		SilenceUsage: true,
 	}
 	rootCommand.AddCommand(sandbox.GetCommand(), newVersionCommand())
 	return rootCommand

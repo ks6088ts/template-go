@@ -1,14 +1,19 @@
 # Git
-GIT_REVISION ?= $(shell git rev-parse --short HEAD)
-GIT_TAG ?= $(shell git describe --tags --abbrev=0 --always | sed -e 's/^v//')
+# Source archives have no Git metadata; untagged builds are development versions.
+GIT_REVISION ?= $(shell git rev-parse --short HEAD 2>/dev/null || printf unknown)
+GIT_TAG ?= $(shell if test -z "$$(git status --porcelain 2>/dev/null)"; then git describe --tags --exact-match --match 'v[0-9]*' HEAD 2>/dev/null | sed -e 's/^v//'; fi)
+ifeq ($(strip $(GIT_TAG)),)
+GIT_TAG := dev
+endif
 
 # Go
+MODULE_PATH := $(shell go list -m)
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 GOBUILD ?= GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build -mod=readonly
 LDFLAGS ?= '-s -w \
-	-X "github.com/ks6088ts/template-go/internal.Revision=$(GIT_REVISION)" \
-	-X "github.com/ks6088ts/template-go/internal.Version=$(GIT_TAG)" \
+	-X "$(MODULE_PATH)/internal.Revision=$(GIT_REVISION)" \
+	-X "$(MODULE_PATH)/internal.Version=$(GIT_TAG)" \
 '
 
 # Docker
@@ -30,6 +35,11 @@ HADOLINT_VERSION ?= 2.15.1
 TRIVY_VERSION ?= 0.74.0
 # https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck
 GOVULNCHECK_VERSION ?= 1.8.0
+# Version-specific paths make installs incremental without running a version probe.
+GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint-$(GOLANGCI_LINT_VERSION)/golangci-lint
+ACTIONLINT := $(TOOLS_DIR)/actionlint-$(ACTIONLINT_VERSION)/actionlint
+GORELEASER := $(TOOLS_DIR)/goreleaser-$(GORELEASER_VERSION)/goreleaser
+GOVULNCHECK := $(TOOLS_DIR)/govulncheck-$(GOVULNCHECK_VERSION)/govulncheck
 
 # Misc
 OUTPUT_DIR ?= dist
@@ -39,22 +49,34 @@ OUTPUT ?= $(OUTPUT_DIR)/template-go
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 .DEFAULT_GOAL := help
+.DELETE_ON_ERROR:
 
 .PHONY: install-deps-dev
-install-deps-dev: ## install dependencies for development
-	@mkdir -p $(TOOLS_DIR)
-	GOBIN=$(TOOLS_DIR) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v$(GOLANGCI_LINT_VERSION)
-	GOBIN=$(TOOLS_DIR) go install github.com/rhysd/actionlint/cmd/actionlint@v$(ACTIONLINT_VERSION)
+install-deps-dev: $(GOLANGCI_LINT) $(ACTIONLINT) ## install pinned development tools if missing
+
+$(GOLANGCI_LINT):
+	@mkdir -p "$(@D)"
+	GOBIN="$(@D)" go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v$(GOLANGCI_LINT_VERSION)
+
+$(ACTIONLINT):
+	@mkdir -p "$(@D)"
+	GOBIN="$(@D)" go install github.com/rhysd/actionlint/cmd/actionlint@v$(ACTIONLINT_VERSION)
 
 .PHONY: install-release-tool
-install-release-tool: ## install the release tool
-	@mkdir -p $(TOOLS_DIR)
-	GOBIN=$(TOOLS_DIR) go install github.com/goreleaser/goreleaser/v2@v$(GORELEASER_VERSION)
+install-release-tool: $(GORELEASER) ## install the pinned release tool if missing
+
+$(GORELEASER):
+	@mkdir -p "$(@D)"
+	GOBIN="$(@D)" go install github.com/goreleaser/goreleaser/v2@v$(GORELEASER_VERSION)
+
+$(GOVULNCHECK):
+	@mkdir -p "$(@D)"
+	GOBIN="$(@D)" go install golang.org/x/vuln/cmd/govulncheck@v$(GOVULNCHECK_VERSION)
 
 .PHONY: format-check
 format-check: ## format check
-	@# https://stackoverflow.com/a/67962664
-	test -z "$$(gofmt -e -l -s .)"
+	@unformatted="$$(gofmt -e -l -s .)" && \
+		if test -n "$$unformatted"; then printf 'Run make format for:\n%s\n' "$$unformatted"; exit 1; fi
 
 .PHONY: format
 format: ## format code
@@ -67,21 +89,21 @@ deps-check: ## check go.mod and go.sum without changing them
 
 .PHONY: vet
 vet: ## run Go's built-in analyzers
-	go vet ./...
+	go vet -mod=readonly ./...
 
 .PHONY: lint
 lint: install-deps-dev ## lint
-	$(TOOLS_DIR)/golangci-lint run
-	$(TOOLS_DIR)/actionlint
+	"$(GOLANGCI_LINT)" run
+	"$(ACTIONLINT)"
 
 .PHONY: test
 test: ## run tests
-	go test -race -cover ./...
+	go test -mod=readonly -race -cover ./...
 
 .PHONY: build
 build: ## build applications
-	mkdir -p $(OUTPUT_DIR)
-	$(GOBUILD) -ldflags=$(LDFLAGS) -trimpath -o $(OUTPUT) .
+	mkdir -p "$(OUTPUT_DIR)"
+	$(GOBUILD) -ldflags=$(LDFLAGS) -trimpath -o "$(OUTPUT)" .
 
 .PHONY: ci-test
 ci-test: format-check deps-check vet lint test build ## run CI test
@@ -94,7 +116,16 @@ update: ## update
 
 .PHONY: release
 release: install-release-tool ## release applications
-	$(TOOLS_DIR)/goreleaser release --snapshot --clean
+	"$(GORELEASER)" release --snapshot --clean
+
+# Validate the environment value, never interpolate a release tag into shell code.
+export RELEASE_TAG
+.PHONY: release-check
+release-check: ## validate RELEASE_TAG as a v-prefixed semantic version
+	@case "$$RELEASE_TAG" in *[[:space:]]*) printf 'Invalid release tag: %s\n' "$$RELEASE_TAG" >&2; exit 1;; esac; \
+		printf '%s\n' "$$RELEASE_TAG" | grep -Eq \
+		'^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$$' || \
+		{ printf 'Invalid release tag: %s\n' "$$RELEASE_TAG" >&2; exit 1; }
 
 # ---
 # Docker
@@ -113,8 +144,9 @@ docker-run: ## run Docker container
 	docker run --rm $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG) $(DOCKER_COMMAND)
 
 .PHONY: docker-smoke
-docker-smoke: ## check the container's version command
-	docker run --rm $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG) version
+docker-smoke: docker-build ## check the container's version output
+	@test "$$(docker run --rm $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG) version)" = \
+		"version=$(GIT_TAG), revision=$(GIT_REVISION)"
 
 .PHONY: docker-lint
 docker-lint: ## lint Dockerfile
@@ -125,10 +157,8 @@ docker-scan: ## scan Docker image
 	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:$(TRIVY_VERSION) image $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG)
 
 .PHONY: vuln-check
-vuln-check: ## check Go packages for known vulnerabilities (optional)
-	@mkdir -p $(TOOLS_DIR)
-	GOBIN=$(TOOLS_DIR) go install golang.org/x/vuln/cmd/govulncheck@v$(GOVULNCHECK_VERSION)
-	$(TOOLS_DIR)/govulncheck ./...
+vuln-check: $(GOVULNCHECK) ## check Go packages for known vulnerabilities (optional)
+	"$(GOVULNCHECK)" ./...
 
 .PHONY: ci-test-docker
 ci-test-docker: docker-lint docker-build docker-smoke ## run CI test for Docker
