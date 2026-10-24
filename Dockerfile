@@ -1,5 +1,5 @@
 # Compile on the builder's native platform instead of emulating the target CPU.
-FROM --platform=$BUILDPLATFORM golang:1.27.2-bookworm AS build
+FROM --platform=$BUILDPLATFORM golang:1.27.3-bookworm AS build
 
 ARG TARGETOS
 ARG TARGETARCH
