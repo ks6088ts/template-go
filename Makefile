@@ -82,6 +82,9 @@ format: ## format code
 deps-check: ## check go.mod and go.sum without changing them
 	go mod tidy -diff
 	go mod verify
+	@want="$$(awk '$$1 == "go" { print $$2 }' go.mod)" && \
+		grep -Eq "^FROM .*golang:$$want-" Dockerfile || \
+		{ printf 'Dockerfile Go image must match go.mod (go %s)\n' "$$want" >&2; exit 1; }
 
 .PHONY: vet
 vet: ## run Go's built-in analyzers

@@ -20,6 +20,8 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
+          # Release builds must not restore caches written by other refs.
+          cache: false
       - name: Validate release tag
         env:
           RELEASE_TAG: ${{ github.ref_name }}
