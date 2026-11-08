@@ -24,13 +24,13 @@ DOCKER_COMMAND ?=
 # Tools
 TOOLS_DIR ?= $(CURDIR)/.tools/bin
 # https://github.com/golangci/golangci-lint/releases
-GOLANGCI_LINT_VERSION ?= 2.14.0
+GOLANGCI_LINT_VERSION ?= 2.15.0
 # https://github.com/rhysd/actionlint/releases
 ACTIONLINT_VERSION ?= 1.7.12
 # https://github.com/goreleaser/goreleaser/releases
-GORELEASER_VERSION ?= 2.18.2
+GORELEASER_VERSION ?= 2.20.0
 # https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck
-GOVULNCHECK_VERSION ?= 1.8.0
+GOVULNCHECK_VERSION ?= 1.9.0
 # Version-specific paths make installs incremental without running a version probe.
 GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint-$(GOLANGCI_LINT_VERSION)/golangci-lint
 ACTIONLINT := $(TOOLS_DIR)/actionlint-$(ACTIONLINT_VERSION)/actionlint
@@ -113,9 +113,11 @@ update: ## update
 	go get -u ./...
 	go mod tidy
 
+# CI publishes with GORELEASER_ARGS="release --clean"; the default never publishes.
+GORELEASER_ARGS ?= release --snapshot --clean
 .PHONY: release
-release: install-release-tool ## release applications
-	"$(GORELEASER)" release --snapshot --clean
+release: install-release-tool ## build release archives with GoReleaser (snapshot by default)
+	"$(GORELEASER)" $(GORELEASER_ARGS)
 
 # Validate the environment value, never interpolate a release tag into shell code.
 export RELEASE_TAG
