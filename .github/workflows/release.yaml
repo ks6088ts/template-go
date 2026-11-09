@@ -3,34 +3,32 @@ on:
   push:
     tags:
       - "v*"
-permissions:
-  contents: read
+permissions: {}
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+          # Release builds must not restore caches written by other refs.
+          cache: false
       - name: Validate release tag
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: make release-check
       - name: Check release source
         run: make format-check deps-check vet test
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7
-        with:
-          distribution: goreleaser
-          version: v2.18.2
-          args: release --clean
+      - name: Publish release with GoReleaser
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_ARGS: release --clean
+        run: make release

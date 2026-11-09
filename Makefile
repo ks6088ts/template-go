@@ -7,7 +7,8 @@ GIT_TAG := dev
 endif
 
 # Go
-MODULE_PATH := $(shell go list -m)
+# Read go.mod directly so Docker-only targets do not require a Go toolchain.
+MODULE_PATH := $(shell awk '$$1 == "module" { print $$2 }' go.mod)
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 GOBUILD ?= GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build -mod=readonly
@@ -17,24 +18,19 @@ LDFLAGS ?= '-s -w \
 '
 
 # Docker
-DOCKER_REPO_NAME ?= ks6088ts
-DOCKER_IMAGE_NAME ?= template-go
+DOCKER_IMAGE ?= $(notdir $(MODULE_PATH)):$(GIT_TAG)
 DOCKER_COMMAND ?=
 
 # Tools
 TOOLS_DIR ?= $(CURDIR)/.tools/bin
 # https://github.com/golangci/golangci-lint/releases
-GOLANGCI_LINT_VERSION ?= 2.14.0
+GOLANGCI_LINT_VERSION ?= 2.15.0
 # https://github.com/rhysd/actionlint/releases
 ACTIONLINT_VERSION ?= 1.7.12
 # https://github.com/goreleaser/goreleaser/releases
-GORELEASER_VERSION ?= 2.18.2
-# https://github.com/hadolint/hadolint/releases
-HADOLINT_VERSION ?= 2.15.1
-# https://github.com/aquasecurity/trivy/releases
-TRIVY_VERSION ?= 0.74.0
+GORELEASER_VERSION ?= 2.20.0
 # https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck
-GOVULNCHECK_VERSION ?= 1.8.0
+GOVULNCHECK_VERSION ?= 1.9.0
 # Version-specific paths make installs incremental without running a version probe.
 GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint-$(GOLANGCI_LINT_VERSION)/golangci-lint
 ACTIONLINT := $(TOOLS_DIR)/actionlint-$(ACTIONLINT_VERSION)/actionlint
@@ -86,6 +82,9 @@ format: ## format code
 deps-check: ## check go.mod and go.sum without changing them
 	go mod tidy -diff
 	go mod verify
+	@want="$$(awk '$$1 == "go" { print $$2 }' go.mod)" && \
+		grep -Eq "^FROM .*golang:$$want-" Dockerfile || \
+		{ printf 'Dockerfile Go image must match go.mod (go %s)\n' "$$want" >&2; exit 1; }
 
 .PHONY: vet
 vet: ## run Go's built-in analyzers
@@ -114,9 +113,11 @@ update: ## update
 	go get -u ./...
 	go mod tidy
 
+# CI publishes with GORELEASER_ARGS="release --clean"; the default never publishes.
+GORELEASER_ARGS ?= release --snapshot --clean
 .PHONY: release
-release: install-release-tool ## release applications
-	"$(GORELEASER)" release --snapshot --clean
+release: install-release-tool ## build release archives with GoReleaser (snapshot by default)
+	"$(GORELEASER)" $(GORELEASER_ARGS)
 
 # Validate the environment value, never interpolate a release tag into shell code.
 export RELEASE_TAG
@@ -131,34 +132,37 @@ release-check: ## validate RELEASE_TAG as a v-prefixed semantic version
 # Docker
 # ---
 
+.PHONY: docker-check
+docker-check: ## run BuildKit checks on the Dockerfile
+	docker build --check .
+
 .PHONY: docker-build
-docker-build: ## build Docker image
+docker-build: ## build Docker image for the local platform
 	docker build \
-		-t $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG) \
-		--build-arg GIT_REVISION=$(GIT_REVISION) \
-		--build-arg GIT_TAG=$(GIT_TAG) \
+		-t "$(DOCKER_IMAGE)" \
+		--build-arg GIT_REVISION="$(GIT_REVISION)" \
+		--build-arg GIT_TAG="$(GIT_TAG)" \
 		.
 
 .PHONY: docker-run
 docker-run: ## run Docker container
-	docker run --rm $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG) $(DOCKER_COMMAND)
+	docker run --rm "$(DOCKER_IMAGE)" $(DOCKER_COMMAND)
 
+# Requires a built image; ci-test-docker orders the prerequisites.
 .PHONY: docker-smoke
-docker-smoke: docker-build ## check the container's version output
-	@test "$$(docker run --rm $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG) version)" = \
-		"version=$(GIT_TAG), revision=$(GIT_REVISION)"
-
-.PHONY: docker-lint
-docker-lint: ## lint Dockerfile
-	docker run --rm -i hadolint/hadolint:v$(HADOLINT_VERSION) < Dockerfile
-
-.PHONY: docker-scan
-docker-scan: ## scan Docker image
-	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:$(TRIVY_VERSION) image $(DOCKER_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(GIT_TAG)
+docker-smoke: ## check the container's user and version output
+	@user="$$(docker image inspect -f '{{.Config.User}}' "$(DOCKER_IMAGE)")" && \
+		case "$$user" in ''|root|0|0:*|root:*) printf 'Image runs as root: "%s"\n' "$$user" >&2; exit 1;; esac
+	@output="$$(docker run --rm "$(DOCKER_IMAGE)" version)" && \
+		test "$$output" = "version=$(GIT_TAG), revision=$(GIT_REVISION)" || \
+		{ printf 'Unexpected version output: %s\n' "$$output" >&2; exit 1; }
 
 .PHONY: vuln-check
 vuln-check: $(GOVULNCHECK) ## check Go packages for known vulnerabilities (optional)
 	"$(GOVULNCHECK)" ./...
 
 .PHONY: ci-test-docker
-ci-test-docker: docker-lint docker-build docker-smoke ## run CI test for Docker
+ci-test-docker: ## run CI test for Docker
+	$(MAKE) docker-check
+	$(MAKE) docker-build
+	$(MAKE) docker-smoke
